@@ -1,0 +1,56 @@
+For example , if we want to calculate A + B = 0.1 + 0.01
+		sign      Exp				Significand
+A = 0.1 =     0  |  0111 1011  |  1001 1001 1001 1001 1001 101
+	    =  2^(123-127) * 1.60000002384185791015 = 0.10000000149011612
+B = 0.01=     0  |  0111 1000  |  0100 0111 1010 1110 0001 010
+        =  2^(120-127) * 1.27999997138977050781 = 0.00999999977648258
+
+Setp1:
+Exp_A = (A & 0x7F800000) >> 23 = 01111011    # lower 8 bits
+Exp_B = (B & 0x7F800000) >> 23 = 01111000	# lower 8 bits
+
+Setp2:
+Significand_A = (A & 0x007FFFFF) = 10011001100110011001101	# lower 23 bits
+Significand_B = (A & 0x007FFFFF) = 01000111101011100001010	# lower 23 bits
+(append 1) Append_Significand_A = 110011001100110011001101 (= 1.60000002384185791015)
+(append 1) Append_Significand_B = 101000111101011100001010 (= 1.27999997138977050781)
+
+Setp3:
+B is smaller than A
+
+Step4:
+Result_Exp = Exp_A
+
+Step5:
+Exp_A - Exp_B = 3
+Append_Significand_B' = Append_Significand_B >> 3
+					  = 101000111101011100001010 >> 3
+				 	  = 00010100011110101110000100
+
+Setp6:
+Append.Significand = Append.Significand_1 + Append.Significand_2'
+			  = 1100 1100 1100 1100 1100 1101 + 0001 0100 0111 1010 1110 0001
+			  = 1110 0001 0100 0111 1010 1110
+Step7:
+Do nothing in this example
+
+Step8:
+Result_Significand = 1100 0010 1000 1111 0101 110
+
+Step9:
+Result = 0  |  0111 1011  |  1100 0010 1000 1111 0101 110
+       = 00111101111000010100011110101110
+       = 0.10999999940395355 = 0.11
+
+STEPS:
+In summary, your algorithm will need to do the following:
+1. Mask and shift down the two exponents
+2. Mask the two significands and append leading 1s
+3. Compare the exponents and subtract the smaller from the larger
+4. Set the exponent of the result to be the larger of the addend exponents
+5. Right shift the significand of the smaller number by the difference between exponents to
+align the two significands
+6. Sum the significands
+7. If the sum overflows [1, 2), right shift by 1 and increment the exponent by 1
+8. Strip the leading 1 off the sum significand
+9. Merge the sum significand and exponent
